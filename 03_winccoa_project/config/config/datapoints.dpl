@@ -1,0 +1,8 @@
+// Datapoint type for Motor control (Digital2Real)
+
+dpType Motor
+{
+  bool   Run;        // Command
+  float  Setpoint;   // RPM reference
+  float  Speed;      // Feedback
+}
