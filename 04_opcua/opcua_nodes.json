@@ -1,0 +1,20 @@
+{
+  "namespace": "urn:digital2real:project01",
+  "nodes": [
+    {
+      "name": "Run",
+      "nodeId": "ns=1;s=Digital2Real.Motor.Run",
+      "datatype": "Boolean"
+    },
+    {
+      "name": "Setpoint",
+      "nodeId": "ns=1;s=Digital2Real.Motor.Setpoint",
+      "datatype": "Float"
+    },
+    {
+      "name": "Speed",
+      "nodeId": "ns=1;s=Digital2Real.Motor.Speed",
+      "datatype": "Float"
+    }
+  ]
+}
