@@ -1,0 +1,279 @@
+[
+  {
+    "id": "b2b1c6d6c1f3a2a1",
+    "type": "tab",
+    "label": "D2R - OPC UA Motor (3 tags)",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "a1c1f31d6c8b0d11",
+    "type": "OpcUa-Server",
+    "z": "b2b1c6d6c1f3a2a1",
+    "endpoint": "opc.tcp://127.0.0.1:4841",
+    "name": "Digital2Real-OPCUA",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "registerToDiscovery": false,
+    "allowAnonymous": true,
+    "disableDiscovery": false,
+    "securityPolicy": "None",
+    "securityMode": "NONE",
+    "login": false,
+    "userManager": false,
+    "users": [],
+    "port": "4841",
+    "resourcePath": "UA/Digital2Real",
+    "buildDefaultAddressSpace": true,
+    "x": 820,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "c1d3fb6f0caa2d22",
+    "type": "OpcUa-Item",
+    "z": "b2b1c6d6c1f3a2a1",
+    "item": "ns=1;s=Digital2Real.Motor.Run",
+    "datatype": "Boolean",
+    "value": "0",
+    "name": "Run",
+    "x": 560,
+    "y": 160,
+    "wires": [
+      [
+        "a1c1f31d6c8b0d11"
+      ]
+    ]
+  },
+  {
+    "id": "d4a6cc7e9a1b9b33",
+    "type": "OpcUa-Item",
+    "z": "b2b1c6d6c1f3a2a1",
+    "item": "ns=1;s=Digital2Real.Motor.Setpoint",
+    "datatype": "Double",
+    "value": "0",
+    "name": "Setpoint",
+    "x": 570,
+    "y": 220,
+    "wires": [
+      [
+        "a1c1f31d6c8b0d11"
+      ]
+    ]
+  },
+  {
+    "id": "e5b0bb5bdf8c8c44",
+    "type": "OpcUa-Item",
+    "z": "b2b1c6d6c1f3a2a1",
+    "item": "ns=1;s=Digital2Real.Motor.Speed",
+    "datatype": "Double",
+    "value": "0",
+    "name": "Speed",
+    "x": 560,
+    "y": 280,
+    "wires": [
+      [
+        "a1c1f31d6c8b0d11"
+      ]
+    ]
+  },
+  {
+    "id": "f6c4a30e0b5a1c55",
+    "type": "inject",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "INIT defaults",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.5,
+    "topic": "",
+    "payload": "init",
+    "payloadType": "str",
+    "x": 160,
+    "y": 240,
+    "wires": [
+      [
+        "aa12e2b9a9d8e666"
+      ]
+    ]
+  },
+  {
+    "id": "aa12e2b9a9d8e666",
+    "type": "function",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "Init: set Run/Setpoint/Speed",
+    "func": "flow.set('run', false);\nflow.set('sp', 50);\nflow.set('speed', 0);\n\nreturn [\n  {payload: 0, topic: 'Run'},\n  {payload: 50, topic: 'Setpoint'},\n  {payload: 0, topic: 'Speed'}\n];",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 390,
+    "y": 240,
+    "wires": [
+      [
+        "c1d3fb6f0caa2d22",
+        "b1e3b7a2de0f7a01"
+      ],
+      [
+        "d4a6cc7e9a1b9b33",
+        "b1e3b7a2de0f7a01"
+      ],
+      [
+        "e5b0bb5bdf8c8c44",
+        "b1e3b7a2de0f7a01"
+      ]
+    ]
+  },
+  {
+    "id": "b3b7aa11d9b0e777",
+    "type": "inject",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "SIM tick (500ms)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "0.5",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "tick",
+    "payloadType": "str",
+    "x": 170,
+    "y": 340,
+    "wires": [
+      [
+        "c7c8ad22f6b4d888"
+      ]
+    ]
+  },
+  {
+    "id": "c7c8ad22f6b4d888",
+    "type": "function",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "Sim: Speed follows Setpoint if Run",
+    "func": "// Minimal 1st-order simulation\n// - If Run=false => Speed=0\n// - If Run=true  => Speed tends to Setpoint\n\nconst run = !!flow.get('run');\nconst sp = Number(flow.get('sp') ?? 0);\nlet speed = Number(flow.get('speed') ?? 0);\n\nif (!run) {\n  speed = 0;\n} else {\n  const alpha = 0.25; // response factor per tick\n  speed = speed + alpha * (sp - speed);\n}\n\n// Clamp + round\nspeed = Math.max(0, Math.min(3000, speed));\nspeed = Math.round(speed * 10) / 10;\n\nflow.set('speed', speed);\n\nreturn { payload: speed };",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 420,
+    "y": 340,
+    "wires": [
+      [
+        "e5b0bb5bdf8c8c44",
+        "b1e3b7a2de0f7a01"
+      ]
+    ]
+  },
+  {
+    "id": "d9f1e2a33f77f999",
+    "type": "inject",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "Toggle Run",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 150,
+    "y": 120,
+    "wires": [
+      [
+        "e2f9d7a1c3a0b111"
+      ]
+    ]
+  },
+  {
+    "id": "e2f9d7a1c3a0b111",
+    "type": "function",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "Run: toggle + store",
+    "func": "const current = !!flow.get('run');\nconst next = !current;\nflow.set('run', next);\nreturn { payload: next ? 1 : 0 };",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 380,
+    "y": 120,
+    "wires": [
+      [
+        "c1d3fb6f0caa2d22",
+        "b1e3b7a2de0f7a01"
+      ]
+    ]
+  },
+  {
+    "id": "f1a7a8c0d2c3e222",
+    "type": "inject",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "Set Setpoint=1500",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "1500",
+    "payloadType": "num",
+    "x": 170,
+    "y": 200,
+    "wires": [
+      [
+        "a4f3b9c2d0e9c333"
+      ]
+    ]
+  },
+  {
+    "id": "a4f3b9c2d0e9c333",
+    "type": "function",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "Setpoint: store",
+    "func": "const sp = Number(msg.payload);\nflow.set('sp', sp);\nreturn { payload: sp };",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 390,
+    "y": 200,
+    "wires": [
+      [
+        "d4a6cc7e9a1b9b33",
+        "b1e3b7a2de0f7a01"
+      ]
+    ]
+  },
+  {
+    "id": "b1e3b7a2de0f7a01",
+    "type": "debug",
+    "z": "b2b1c6d6c1f3a2a1",
+    "name": "Debug (values)",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 820,
+    "y": 340,
+    "wires": []
+  }
+]
